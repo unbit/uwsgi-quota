@@ -52,7 +52,7 @@ static int hook_setquota(char *arg) {
 		goto clear;
 	}
 	q.dqb_valid = QIF_BLIMITS;
-	if (quotactl(Q_SETQUOTA, argv[0], id, (caddr_t) &q)) {
+	if (quotactl(QCMD(Q_SETQUOTA, USRQUOTA), argv[0], id, (caddr_t) &q)) {
 		uwsgi_error("hook_setquota()/quotactl()");
 		goto clear;
 	}
