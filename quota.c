@@ -22,7 +22,7 @@ static void master_check_quota() {
 	uwsgi_foreach(usl, uquota.alarms) {
 		uwsgi_log("check quota: %s\n", usl->value);
 		struct dqblk q;
-		if (quotactl("/", Q_GETQUOTA, getuid(), (char *)&q)) {
+		if (quotactl(Q_GETQUOTA, "/", getuid(), (char *)&q)) {
 			uwsgi_error("master_check_quota()/quotactl()");
 		}
 		else {
@@ -52,7 +52,7 @@ static int hook_setquota(char *arg) {
 		goto clear;
 	}
 	q.dqb_valid = QIF_BLIMITS;
-	if (quotactl(Q_SETQUOTA, argv[0], id, &q)) {
+	if (quotactl(Q_SETQUOTA, argv[0], id, (caddr_t) &q)) {
 		uwsgi_error("hook_setquota()/quotactl()");
 		goto clear;
 	}
