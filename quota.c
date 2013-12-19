@@ -32,11 +32,39 @@ static void master_check_quota() {
 }
 
 static int hook_setquota(char *arg) {
+	size_t i,rlen = 0;
+	int ret = -1;
 	struct dqblk q;
 	memset(&q, 0, sizeof(struct dqblk));
-	//q.dqb_bhardlimit = btodb(100);
-	//dbtob(
-	return 0;
+	char **argv = uwsgi_split_quoted(arg, strlen(arg), " \t", &rlen);
+	if (rlen < 3) {
+		uwsgi_log("invalid setquota syntax, must be <mountpoint> <uid> <bytes>\n");
+		goto clear;
+	}
+	int id = atoi(argv[1]);
+	if (id < 1) {
+		uwsgi_log("invalid uid, you can only set a quota for unprivileged users\n");
+		goto clear;
+	}
+	q.dqb_bhardlimit = btodb(uwsgi_n64(argv[2]));
+	if (q.dqb_bhardlimit < 1) {
+		uwsgi_log("invalid quota size: %llu\n", (unsigned long long) q.dqb_bhardlimit);
+		goto clear;
+	}
+	q.dqb_valid = QIF_BLIMITS;
+	if (quotactl(Q_SETQUOTA, argv[0], id, &q)) {
+		uwsgi_error("hook_setquota()/quotactl()");
+		goto clear;
+	}
+	ret = 0;
+clear:
+	if (argv) {
+		for(i=0;i<rlen;i++) {
+			free(argv[i]);
+		}
+		free(argv);
+	}
+	return ret;
 }
 
 static void quota_register_features() {
