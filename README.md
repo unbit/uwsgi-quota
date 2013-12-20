@@ -37,7 +37,7 @@ alarm-freq = 60
 ...
 ```
 
-The plugin supports the new build api, so to compile it you only need 1.9.21/2.0 uwsgi binary and run:
+The plugin supports the new build api, so to compile it you only need >=1.9.21 uwsgi binary and run:
 
 ```sh
 uwsgi --build-plugin uwsgi-quota
