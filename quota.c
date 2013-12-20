@@ -12,7 +12,7 @@ static struct uwsgi_quota {
 } uquota;
 
 static struct uwsgi_option quota_options[] = {
-	{ "alarm-quota", required_argument, 0, "add an alarm when user filesystem quota is higher than the specified percentage, syntax <path> <percentage>", uwsgi_opt_add_string_list, &uquota.alarms, UWSGI_OPT_MASTER},
+	{ "alarm-quota", required_argument, 0, "raise the specified alarm when user filesystem quota is higher than threshold percentage (default 90), syntax <alarm> <path> [percentage]", uwsgi_opt_add_string_list, &uquota.alarms, UWSGI_OPT_MASTER},
 	UWSGI_END_OF_OPTIONS
 };
 
@@ -20,13 +20,45 @@ static void master_check_quota() {
 	if (!uquota.alarms) return;
 	struct uwsgi_string_list *usl = NULL;
 	uwsgi_foreach(usl, uquota.alarms) {
-		uwsgi_log("check quota: %s\n", usl->value);
+		if (!usl->custom && !usl->custom_ptr) {
+			size_t rlen;
+			char **argv = uwsgi_split_quoted(usl->value, usl->len, " \t", &rlen);
+			if (!argv || rlen < 2) {
+				uwsgi_log("invalid quota-alarm specified, must be in the form: <alarm> <path> [percentage]\n");
+				// not very funny to exit here...
+				exit(1);
+			}
+			usl->custom_ptr = argv;
+			usl->custom = 90;
+			if (rlen > 2) {
+				usl->custom = atoi(argv[2]);
+			}
+			uwsgi_log("added quota monitor for %s (threshold: %d%)\n", argv[1], usl->custom);
+		}
 		struct dqblk q;
-		if (quotactl(Q_GETQUOTA, "/", getuid(), (char *)&q)) {
+		char **argv = (char **) usl->custom_ptr;
+		if (quotactl(QCMD(Q_GETQUOTA, USRQUOTA), argv[1], getuid(), (char *)&q)) {
 			uwsgi_error("master_check_quota()/quotactl()");
 		}
 		else {
-			uwsgi_log("quota ready\n");
+			uint64_t max_quota = dbtob(q.dqb_bhardlimit);
+			if (max_quota < 1) continue;
+			uint64_t current_quota = q.dqb_curspace;
+			uint64_t result = 100;
+			if (current_quota > 0) {
+				result = (current_quota*100)/max_quota;
+			}
+			if (result >= usl->custom) {
+				char msg[1024];
+				int ret = snprintf(msg, 1024, "quota of %s is higher than the threshold (%llu/%llu)", argv[1], current_quota, max_quota);
+				if (ret > 0) {
+					uwsgi_alarm_trigger(argv[0], msg, ret);
+				}
+				else {
+					// fallback
+					uwsgi_alarm_trigger(argv[0], "QUOTA ALARM", 11);
+				}
+			}
 		}
 	}
 }
