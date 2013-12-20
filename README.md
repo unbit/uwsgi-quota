@@ -4,7 +4,7 @@ uwsgi-quota
 uWSGI plugin for UNIX quota integration
 
 
-This is another plugin developer for the uwsgi.it service.
+This is another plugin developed for the upcoming uwsgi.it service.
 
 It allows the customer Emperor to set quota on startup and to monitor it constantly.
 
