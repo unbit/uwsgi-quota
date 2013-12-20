@@ -32,7 +32,7 @@ hook-asap = setquota:/dev/sda1 30001 100000000
 alarm = overquota log:
 ; raise the 'overquota' alarm when the quota is over 98%
 alarm-quota = overquota /dev/sda1 98
-; do not raise more than one alarm for minute
+; do not raise more than one alarm per minute
 alarm-freq = 60
 ...
 ```
