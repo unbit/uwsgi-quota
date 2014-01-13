@@ -49,6 +49,8 @@ static void master_check_quota() {
 				result = (current_quota*100)/max_quota;
 			}
 			if (result >= usl->custom) {
+				time_t now = uwsgi_now();
+				if (now - usl->custom2 < 60) continue;
 				char msg[1024];
 				int ret = snprintf(msg, 1024, "quota of %s is higher than the threshold (%llu/%llu)", argv[1], current_quota, max_quota);
 				if (ret > 0) {
@@ -58,6 +60,7 @@ static void master_check_quota() {
 					// fallback
 					uwsgi_alarm_trigger(argv[0], "QUOTA ALARM", 11);
 				}
+				usl->custom2 = now;
 			}
 		}
 	}
