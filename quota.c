@@ -67,8 +67,6 @@ static void master_check_quota() {
 }
 
 static int hook_setquota(char *arg) {
-	// temporary fix for broken ubuntu quota on uwsgi.it
-	return 0;
 	size_t i,rlen = 0;
 	int ret = -1;
 	struct dqblk q;
