@@ -52,7 +52,7 @@ static void master_check_quota() {
 				time_t now = uwsgi_now();
 				if (now - usl->custom2 < 60) continue;
 				char msg[1024];
-				int ret = snprintf(msg, 1024, "quota of %s is higher than the threshold (%llu/%llu)", argv[1], current_quota, max_quota);
+				int ret = snprintf(msg, 1024, "quota of %s is higher than the threshold (%llu/%llu)", argv[1], (unsigned long long) current_quota, (unsigned long long) max_quota);
 				if (ret > 0) {
 					uwsgi_alarm_trigger(argv[0], msg, ret);
 				}
